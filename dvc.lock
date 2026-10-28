@@ -1,0 +1,195 @@
+schema: '2.0'
+stages:
+  data_collection:
+    cmd: python -m src.data_collection
+    deps:
+    - path: src/data_collection.py
+      hash: md5
+      md5: 084599678f16b1832518d7a0a0bdcafd
+      size: 5468
+    - path: src/utils.py
+      hash: md5
+      md5: 3f835ce0ebcd62c5e46fb88eaf89e8af
+      size: 1451
+    params:
+      params.yaml:
+        base:
+          random_seed: 42
+          num_classes: 10
+        data_collection:
+          dataset_name: cifar10
+          max_samples: 2500
+          output_dir: data/raw
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 706173f845d6845e819bbdc4a6dc5b88.dir
+      size: 6297311
+      nfiles: 3002
+  data_processing:
+    cmd: python -m src.data_processing
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 706173f845d6845e819bbdc4a6dc5b88.dir
+      size: 6297311
+      nfiles: 3002
+    - path: src/data_processing.py
+      hash: md5
+      md5: 446d0c45aaf5c8627cf2e02747224b38
+      size: 5502
+    - path: src/utils.py
+      hash: md5
+      md5: 3f835ce0ebcd62c5e46fb88eaf89e8af
+      size: 1451
+    params:
+      params.yaml:
+        base:
+          random_seed: 42
+          num_classes: 10
+        data_processing:
+          image_size: 32
+          validation_split: 0.2
+          test_split: 0.15
+          normalize: true
+          augmentation:
+            enabled: true
+            rotation_range: 15
+            horizontal_flip: true
+            zoom_range: 0.1
+            width_shift_range: 0.1
+            height_shift_range: 0.1
+            brightness_delta: 0.1
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: d8070178a6f44fe9e29b535a30b8ae24.dir
+      size: 15877106
+      nfiles: 4
+  feature_selection:
+    cmd: python -m src.feature_selection
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: d8070178a6f44fe9e29b535a30b8ae24.dir
+      size: 15877106
+      nfiles: 4
+    - path: src/feature_selection.py
+      hash: md5
+      md5: 92c348459facf97e278077039d908e82
+      size: 3832
+    - path: src/utils.py
+      hash: md5
+      md5: 3f835ce0ebcd62c5e46fb88eaf89e8af
+      size: 1451
+    params:
+      params.yaml:
+        base:
+          random_seed: 42
+          num_classes: 10
+        feature_selection:
+          method: selectkbest
+          variance_threshold: 0.01
+          k_best: 256
+          pca_components: 64
+          score_func: f_classif
+    outs:
+    - path: data/features
+      hash: md5
+      md5: df8cb6bd8182e63461d7cda818c550e8.dir
+      size: 17840558
+      nfiles: 5
+  model_training:
+    cmd: python -m src.model_training
+    deps:
+    - path: data/features
+      hash: md5
+      md5: df8cb6bd8182e63461d7cda818c550e8.dir
+      size: 17840558
+      nfiles: 5
+    - path: src/model_training.py
+      hash: md5
+      md5: 3e8dac4d7630f939897af5cbe5ebc73e
+      size: 6829
+    - path: src/utils.py
+      hash: md5
+      md5: 3f835ce0ebcd62c5e46fb88eaf89e8af
+      size: 1451
+    params:
+      params.yaml:
+        base:
+          random_seed: 42
+          num_classes: 10
+        model_training:
+          architecture: cnn
+          learning_rate: 0.001
+          batch_size: 32
+          epochs: 6
+          optimizer: adam
+          dropout_rate: 0.3
+          dense_units: 128
+          conv_filters:
+          - 32
+          - 64
+          early_stopping_patience: 3
+          l2_regularization: 0.0001
+    outs:
+    - path: models/classifier
+      hash: md5
+      md5: ed04c29d88b8196977e1a691f0da1a01.dir
+      size: 510034
+      nfiles: 2
+    - path: models/training_history.json
+      hash: md5
+      md5: 8a69c9731bb121832c925f818a1b737b
+      size: 238
+  model_evaluation:
+    cmd: python -m src.model_evaluation
+    deps:
+    - path: data/features
+      hash: md5
+      md5: df8cb6bd8182e63461d7cda818c550e8.dir
+      size: 17840558
+      nfiles: 5
+    - path: models/classifier
+      hash: md5
+      md5: ed04c29d88b8196977e1a691f0da1a01.dir
+      size: 510034
+      nfiles: 2
+    - path: models/training_history.json
+      hash: md5
+      md5: 8a69c9731bb121832c925f818a1b737b
+      size: 238
+    - path: src/model_evaluation.py
+      hash: md5
+      md5: 65e44908514c18cc1810ac9d1e6f5719
+      size: 4067
+    - path: src/utils.py
+      hash: md5
+      md5: 3f835ce0ebcd62c5e46fb88eaf89e8af
+      size: 1451
+    params:
+      params.yaml:
+        base:
+          random_seed: 42
+          num_classes: 10
+        model_evaluation:
+          average: macro
+          save_plots: true
+    outs:
+    - path: reports/classification_report.txt
+      hash: md5
+      md5: dbb9f00694f7373d82ed76cf801c0356
+      size: 774
+    - path: reports/confusion_matrix.csv
+      hash: md5
+      md5: 003a3b8ccfe49d95122934e30c5ab2ba
+      size: 6592
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: 343d5e97935418a2a7ebe448a9c678be
+      size: 69153
+    - path: reports/metrics.json
+      hash: md5
+      md5: a076f42006a255cb35d4c931cf8098c7
+      size: 221

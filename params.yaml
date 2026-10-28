@@ -1,0 +1,47 @@
+# Tunable hyperparameters for the Olivetti Faces classification pipeline.
+# Change any value here and re-run: dvc repro
+
+base:
+  random_seed: 42
+  num_classes: 40               # Olivetti Faces — 40 subjects
+
+data_collection:
+  dataset_name: olivetti        # olivetti | synthetic
+  max_samples: 320              # used only for synthetic fallback (train size)
+  output_dir: data/raw
+
+data_processing:
+  image_size: 64                # 1. Olivetti native resolution is 64x64
+  validation_split: 0.20        # 2. share of train used for validation
+  normalize: true
+  augmentation:
+    enabled: true
+    rotation_range: 10          # 3. degrees
+    horizontal_flip: false      # 4. faces — no horizontal flip
+    zoom_range: 0.08            # 5. random zoom
+    width_shift_range: 0.08
+    height_shift_range: 0.08
+    brightness_delta: 0.10
+
+feature_selection:
+  method: pca                   # variance | selectkbest | pca
+  variance_threshold: 0.01      # 6. drop near-constant pixels (variance method)
+  k_best: 256                   # 7. features to keep (selectkbest method)
+  pca_components: 80            # 8. eigenface dimensions (~92% variance)
+  score_func: f_classif         # f_classif | mutual_info
+
+model_training:
+  architecture: mlp             # mlp (pure-NumPy, no TensorFlow required)
+  learning_rate: 0.005          # 9
+  batch_size: 32                # 10
+  epochs: 60                    # 11
+  optimizer: adam               # 12. adam | sgd
+  dropout_rate: 0.30            # 13
+  dense_units: 512              # 14. units per hidden layer
+  early_stopping_patience: 8    # 15
+  l2_regularization: 0.001      # 16
+  seed: 42
+
+model_evaluation:
+  average: macro                # precision/recall/f1 averaging
+  save_plots: true
