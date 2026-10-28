@@ -85,11 +85,14 @@ def main() -> None:
     proba = predict_proba(x_features)
     y_pred = proba.argmax(axis=1)
 
+    # Only score on labels that actually appear in the test set
+    present_labels = sorted(set(int(l) for l in y_true))
+
     metrics = {
         "accuracy":   float(accuracy_score(y_true, y_pred)),
-        "precision":  float(precision_score(y_true, y_pred, average=average, zero_division=0)),
-        "recall":     float(recall_score(y_true, y_pred, average=average, zero_division=0)),
-        "f1":         float(f1_score(y_true, y_pred, average=average, zero_division=0)),
+        "precision":  float(precision_score(y_true, y_pred, average=average, zero_division=0, labels=present_labels)),
+        "recall":     float(recall_score(y_true, y_pred, average=average, zero_division=0, labels=present_labels)),
+        "f1":         float(f1_score(y_true, y_pred, average=average, zero_division=0, labels=present_labels)),
         "architecture": history.get("architecture", "mlp"),
         "backend":      history.get("backend", "numpy"),
         "test_samples": int(len(y_true)),
@@ -97,12 +100,13 @@ def main() -> None:
     }
     save_json(metrics, reports_dir / "metrics.json")
 
+    present_names = [names[i] for i in present_labels]
     report_text = classification_report(
-        y_true, y_pred, target_names=names, zero_division=0
+        y_true, y_pred, labels=present_labels, target_names=present_names, zero_division=0
     )
     (reports_dir / "classification_report.txt").write_text(report_text, encoding="utf-8")
 
-    matrix = confusion_matrix(y_true, y_pred, labels=list(range(len(names))))
+    matrix = confusion_matrix(y_true, y_pred, labels=present_labels)
     with (reports_dir / "confusion_matrix.csv").open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow(["actual", "predicted"])
@@ -110,7 +114,7 @@ def main() -> None:
             writer.writerow([names[int(actual_idx)], names[int(predicted_idx)]])
 
     if bool(eval_cfg.get("save_plots", True)):
-        _save_confusion_plot(matrix, names, reports_dir / "confusion_matrix.png")
+        _save_confusion_plot(matrix, present_names, reports_dir / "confusion_matrix.png")
 
     print("Evaluation metrics:")
     for key, value in metrics.items():
